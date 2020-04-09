@@ -5,71 +5,68 @@ import (
 )
 
 type RegularExpression struct {
-	character   string
-	transitions []*RegularExpression
-	isOptional  bool
+	transitions []*Transition
+	final       bool
 }
 
-func (r *RegularExpression) isMatch(character string) bool {
-	if r.character == "." {
-		return true
-	}
-	return r.character == character || r.isOptional
+type Transition struct {
+	character   string
+	destination *RegularExpression
 }
 
 func (r *RegularExpression) isEnd() bool {
-	if len(r.transitions) == 0 {
+	return r.final
+}
+
+func (r *Transition) isMatch(character string) bool {
+	if r.character == "." {
 		return true
 	}
-	return len(r.transitions) < 2 && r.isOptional
+	return r.character == character
 }
 
 func parseRegularExpression(exp string) *RegularExpression {
 
-	root := RegularExpression{character: "root"}
-	last := &root
-	for _, c := range exp {
+	root := &RegularExpression{}
+	last := root
+	for i, c := range exp {
 		if string(c) == "*" {
-			last.transitions = append(last.transitions, last)
-			last.isOptional = true
+			continue
 		} else {
-			r := &RegularExpression{character: string(c)}
-			last.transitions = append(last.transitions, r)
-			last = r
+			if i < len(exp)-1 && string(exp[i+1]) == "*" {
+				t := &Transition{character: string(c), destination: last}
+				last.transitions = append(last.transitions, t)
+			} else {
+				s := &RegularExpression{}
+				t := &Transition{character: string(c), destination: s}
+				last.transitions = append(last.transitions, t)
+				last = s
+			}
 		}
 	}
-	/*a := &root
-	for i := 0; i<3; i++ {
-		if len(a.transitions) > 0 {
-			fmt.Println(len(a.transitions))
-			fmt.Println(a.transitions[0].character)
-			a = a.transitions[0]
-		}
-	}*/
-	return root.transitions[0]
+	last.final = true
+	return root
 }
 
 func isMatch(str string, r *RegularExpression) bool {
 
-	fmt.Println("str", str)
-	fmt.Println("c", r.character)
-	fmt.Println()
-	if str == "" {
-		fmt.Println("empty str")
-		return r.isEnd()
-	}
-	if r.isMatch(string(str[0])) && r.isEnd() {
-		fmt.Println("equal")
+	//fmt.Println("str", str)
+	//fmt.Println("f", r.final)
+	if str == "" && r.isEnd() {
+		//fmt.Println("end")
 		return true
 	}
-	if !r.isMatch(string(str[0])) && r.isEnd() {
-		fmt.Println("diff")
+	if str == "" {
+		//fmt.Println("empty")
 		return false
 	}
-
 	res := false
 	for _, t := range r.transitions {
-		res = res || isMatch(str[1:], t)
+		//fmt.Println("tb", t.character)
+		if t.isMatch(string(str[0])) {
+			//fmt.Println("t", t.character)
+			res = res || isMatch(str[1:], t.destination)
+		}
 	}
 	return res
 }
@@ -77,7 +74,7 @@ func isMatch(str string, r *RegularExpression) bool {
 func main() {
 
 	r := parseRegularExpression("asd")
-	/*fmt.Println("asd", isMatch("asd", r))
+	fmt.Println("asd", isMatch("asd", r))
 	fmt.Println("as", isMatch("as", r))
 	fmt.Println("asdd", isMatch("asdd", r))
 
@@ -92,11 +89,14 @@ func main() {
 	fmt.Println("tyutyu", isMatch("tyutyu", r))
 
 	r = parseRegularExpression("a*")
-	fmt.Println("aa", isMatch("aa", r))*/
+	fmt.Println("aa", isMatch("aa", r))
 
 	r = parseRegularExpression("c*a*b*")
 	fmt.Println("aab", isMatch("aab", r))
 
 	r = parseRegularExpression("mis*is*p*.")
 	fmt.Println("mississippi", isMatch("mississippi", r))
+
+	r = parseRegularExpression("ab*a*c*a")
+	fmt.Println("aaba", isMatch("aaba", r))
 }

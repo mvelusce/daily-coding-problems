@@ -87,7 +87,7 @@ func oddEvenJumps(A []int) int {
 	c := 0
 	for i := range A {
 		fmt.Println(i)
-		c += oddEvenJumpsR(A, i)
+		c += oddEvenJumpsR(A, len(A)-i-1)
 	}
 	return c
 }
